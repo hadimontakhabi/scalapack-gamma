@@ -182,6 +182,8 @@ int main( int argc, char *argv[])
   free(Gamma);
   printf (" Example completed.\n\n");
 
+  Cblacs_gridexit( ictxt );
+
   MPI_Finalize();
   return 0;
 }
