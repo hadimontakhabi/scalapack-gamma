@@ -6,7 +6,11 @@
 #include <time.h>
 
 static int min( int a, int b ){
-        if (a<b) return(a); else return(b);
+  if (a<b) {
+    return(a); 
+  } else {
+    return(b);
+  }
 }
 
 extern void   Cblacs_pinfo( int* mypnum, int* nprocs);
