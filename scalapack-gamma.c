@@ -17,10 +17,8 @@ extern void   Cblacs_gridinfo( int context, int*  np_row, int* np_col,
 extern void   Cblacs_gridexit( int context);
 extern void   Cblacs_exit( int error_code);
 
-extern int    numroc_( int *n, int *nb, int *iproc, int *isrcproc, int *nprocs);
 extern void   descinit_( int *desc, int *m, int *n, int *mb, int *nb, int *irsrc, 
 		    int *icsrc, int *ictxt, int *lld, int *info);
-
 
 extern void pdgemm_(char *transa, char *transb, int *M, int *N, int *K, double *alpha,
 	       double *A, int *ia, int *ja, int *desca,
@@ -41,7 +39,6 @@ int main( int argc, char *argv[])
   int ictxt, nprow, npcol, myrow, mycol;
   int info;
   int descA[9], descB[9], descC[9];
-  char notrans = 'N';
   int one = 1;
   int zero = 0;
 
@@ -49,7 +46,7 @@ int main( int argc, char *argv[])
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
 
-  printf("my rank is: %d\n", myrank_mpi);
+  printf(" My rank is: %d\n\n", myrank_mpi);
   
   //  X= n X d          XT= d X n
   //  X * XT = Gamma
@@ -69,10 +66,12 @@ int main( int argc, char *argv[])
   sscanf (argv[1],"%d",&n);
   sscanf (argv[2],"%d",&d);
 
-  printf (" Initializing data for matrix multiplication Gamma=XT*X for matrix \n"
+  if (myrank_mpi == 0){
+    printf (" Initializing data for matrix multiplication Gamma=XT*X for matrix \n"
 	  " X(%ix%i) and matrix XT(%ix%i)\n\n", n, d, d, n);
 
-  printf (" Allocating memory for matrices  \n\n");
+    printf (" Allocating memory for matrices  \n\n");
+  }
   XT    = (double *) malloc( d*n*sizeof( double ));//, 64 );
   X     = (double *) malloc( n*d*sizeof( double ));//, 64 );
   Gamma = (double *) malloc( d*d*sizeof( double ));//, 64 );
@@ -84,8 +83,10 @@ int main( int argc, char *argv[])
     return 1;
   }
 
-  printf (" Intializing matrix data \n\n");
-  
+ if (myrank_mpi == 0){
+   printf (" Intializing matrix data \n\n");
+ }
+
   //Fills X with random numbers
 
   for (i = 0; i < (n*d); i++) {
@@ -119,16 +120,17 @@ int main( int argc, char *argv[])
       XT[j*n + i ] = X[i*d + j];
     }
   }
-  
-  printf (" Computing matrix product \n\n");
-  
+
+  if (myrank_mpi == 0){  
+    printf (" Computing matrix product...\n\n");
+  }
   // A full description of the parameters is available in CBLAS library documentation
-
+  
   /*
-  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-	      d, d, n, alpha, XT, n, X, d, beta, Gamma, d);
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+    d, d, n, alpha, XT, n, X, d, beta, Gamma, d);
   */
-
+  
 
   nprow = 2;
   npcol = 2;
@@ -142,48 +144,53 @@ int main( int argc, char *argv[])
   descinit_(descB, &d, &n, &d, &n, &zero, &zero, &ictxt, &d, &info);
   descinit_(descC, &d, &d, &d, &d, &zero, &zero, &ictxt, &d, &info);
 
-
-  pdgemm_(&notrans, &notrans, &d, &d, &n, &alpha, XT, &one, &one, descA, X, &one, &one, descB, &beta, Gamma, &one, &one, descC);
+  pdgemm_("N", "N", &d, &d, &n, &alpha, XT, &one, &one, descA, X, &one, &one, descB, &beta, Gamma, &one, &one, descC);
 
   // Stopping time measurement
 
   clock_gettime(CLOCK_MONOTONIC,&tend);
   long int  timeElapsed =timespecDiff(&tend, &tstart);
-  printf ("\n Computations completed.\n\n");
+  if (myrank_mpi == 0){
+    printf (" computations completed.\n\n");
+  }
   printf("Time:%li", timeElapsed);
 
-  printf ("\n Top left corner of matrix X: \n");
-  for (i=0; i<min(n,6); i++) {
-    for (j=0; j<min(d,6); j++) {
-      printf ("%12.5G", X[i*d+j]);
+  if (myrank_mpi == 0){
+    printf ("\n Top left corner of matrix X: \n");
+ 
+    for (i=0; i<min(n,6); i++) {
+      for (j=0; j<min(d,6); j++) {
+	printf ("%12.5G", X[i*d+j]);
+      }
+      printf ("\n");
     }
-    printf ("\n");
-  }
+    
 
-  printf (" Top left corner of matrix XT: \n");
-  for (i=0; i<min(d,6); i++) {
-    for (j=0; j<min(n,6); j++) {
-      printf ("%12.5G", XT[i*n+j]);
+    printf (" Top left corner of matrix XT: \n");
+    for (i=0; i<min(d,6); i++) {
+      for (j=0; j<min(n,6); j++) {
+	printf ("%12.5G", XT[i*n+j]);
+      }
+      printf ("\n");
     }
-    printf ("\n");
-  }
 
-  printf ("\n Top left corner of matrix Gamma: \n");
-  for (i=0; i<min(d,6); i++) {
-    for (j=0; j<min(d,6); j++) {
-      printf ("%12.5G", Gamma[i*d +j]);
+    printf ("\n Top left corner of matrix Gamma: \n");
+    for (i=0; i<min(d,6); i++) {
+      for (j=0; j<min(d,6); j++) {
+	printf ("%12.5G", Gamma[i*d +j]);
+      }
+      printf ("\n");
     }
-    printf ("\n");
+    
+    printf ("\n Deallocating memory \n\n");
   }
-
-  printf ("\n Deallocating memory \n\n");
   free(X);
   free(XT);
   free(Gamma);
-  printf (" Example completed.\n\n");
-
+  if (myrank_mpi == 0){
+    printf (" Example completed.\n\n");
+  }
   Cblacs_gridexit( ictxt );
-
   MPI_Finalize();
   return 0;
 }
