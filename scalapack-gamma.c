@@ -46,12 +46,6 @@ int main( int argc, char *argv[])
   int one = 1;
   int zero = 0;
 
-  MPI_Init( &argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
-
-  printf(" My rank is: %d\n\n", myrank_mpi);
-  
   //  X= n X d          XT= d X n
   //  X * XT = Gamma
   //  Gamma = d X d
@@ -70,12 +64,11 @@ int main( int argc, char *argv[])
   sscanf (argv[1],"%d",&n);
   sscanf (argv[2],"%d",&d);
 
-  if (myrank_mpi == 0){
-    printf (" Initializing data for matrix multiplication Gamma=XT*X for matrix \n"
+  printf (" Initializing data for matrix multiplication Gamma=XT*X for matrix \n"
 	  " X(%ix%i) and matrix XT(%ix%i)\n\n", n, d, d, n);
 
-    printf (" Allocating memory for matrices  \n\n");
-  }
+  printf (" Allocating memory for matrices  \n\n");
+  
   XT    = (double *) malloc( d*n*sizeof( double ));//, 64 );
   X     = (double *) malloc( n*d*sizeof( double ));//, 64 );
   Gamma = (double *) malloc( d*d*sizeof( double ));//, 64 );
@@ -87,9 +80,8 @@ int main( int argc, char *argv[])
     return 1;
   }
 
- if (myrank_mpi == 0){
-   printf (" Intializing matrix data \n\n");
- }
+  printf (" Intializing matrix data \n\n");
+  
 
   //Fills X with random numbers
 
@@ -125,9 +117,8 @@ int main( int argc, char *argv[])
     }
   }
 
-  if (myrank_mpi == 0){  
-    printf (" Computing matrix product...\n\n");
-  }
+  printf (" Computing matrix product...\n\n");
+  
   // A full description of the parameters is available in CBLAS library documentation
   
   /*
@@ -135,6 +126,13 @@ int main( int argc, char *argv[])
     d, d, n, alpha, XT, n, X, d, beta, Gamma, d);
   */
   
+
+  MPI_Init( &argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs_mpi);
+
+  printf(" My rank is: %d\n\n", myrank_mpi);
+
 
   nprow = 2;
   npcol = 2;
