@@ -142,6 +142,29 @@ int main( int argc, char *argv[])
   Cblacs_gridinit( &ictxt, "R", nprow, npcol );
   Cblacs_gridinfo( ictxt, &nprow, &npcol, &myrow, &mycol );
 
+
+  //For testing purposes
+
+  /* Print grid pattern */
+  int r,c;
+  if (iam == 0)
+    printf("Processes grid pattern:\n");
+  for (r = 0; r < nprow; ++r) {
+    for (c = 0; c < npcol; ++c) {
+      Cblacs_barrier(ictxt, "All");
+      if (myrow == r && mycol == c) {
+	printf("%d ", iam );
+	fflush(stdout);
+      }
+    }
+    Cblacs_barrier(ictxt, "All");
+    if (iam == 0)
+      printf("\n");
+  }
+
+  //end_test
+
+
   descinit_(descA, &n, &d, &n, &d, &zero, &zero, &ictxt, &n, &info);
   descinit_(descB, &d, &n, &d, &n, &zero, &zero, &ictxt, &d, &info);
   descinit_(descC, &d, &d, &d, &d, &zero, &zero, &ictxt, &d, &info);
