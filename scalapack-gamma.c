@@ -143,8 +143,7 @@ int main( int argc, char *argv[])
   Cblacs_gridinfo( ictxt, &nprow, &npcol, &myrow, &mycol );
 
 
-  //For testing purposes
-
+  //test_begin  //for testing purposes
   /* Print grid pattern */
   int r,c;
   if (iam == 0)
@@ -161,8 +160,7 @@ int main( int argc, char *argv[])
     if (iam == 0)
       printf("\n");
   }
-
-  //end_test
+  //test_end
 
 
   descinit_(descA, &n, &d, &n, &d, &zero, &zero, &ictxt, &n, &info);
