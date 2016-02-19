@@ -17,17 +17,17 @@ extern void   Cblacs_pinfo( int* mypnum, int* nprocs);
 extern void   Cblacs_get( int context, int request, int* value);
 extern int    Cblacs_gridinit( int* context, char * order, int np_row, int np_col);
 extern void   Cblacs_gridinfo( int context, int*  np_row, int* np_col, 
-			  int*  my_row, int*  my_col);
+			       int*  my_row, int*  my_col);
 extern void   Cblacs_gridexit( int context);
 extern void   Cblacs_exit( int error_code);
 
 extern void   descinit_( int *desc, int *m, int *n, int *mb, int *nb, int *irsrc, 
-		    int *icsrc, int *ictxt, int *lld, int *info);
+			 int *icsrc, int *ictxt, int *lld, int *info);
 
-extern void pdgemm_(char *transa, char *transb, int *M, int *N, int *K, double *alpha,
-	       double *A, int *ia, int *ja, int *desca,
-	       double *B, int *ib, int *jb, int *descb, double *beta, 
-	       double *C, int *ic, int *jc, int *descc);
+extern void   pdgemm_(char *transa, char *transb, int *M, int *N, int *K, double *alpha,
+		      double *A, int *ia, int *ja, int *desca,
+		      double *B, int *ib, int *jb, int *descb, double *beta, 
+		      double *C, int *ic, int *jc, int *descc);
 
 
 long int timespecDiff(struct timespec *timeA_p, struct timespec *timeB_p)
@@ -35,6 +35,7 @@ long int timespecDiff(struct timespec *timeA_p, struct timespec *timeB_p)
   return ((timeA_p->tv_sec * 1000000000) + timeA_p->tv_nsec) -
     ((timeB_p->tv_sec * 1000000000) + timeB_p->tv_nsec);
 }
+
 
 int main( int argc, char *argv[])
 {
