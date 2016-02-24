@@ -135,8 +135,8 @@ int main( int argc, char *argv[])
   printf(" My rank is: %d\n\n", myrank_mpi);
 
 
-  nprow = 2;
-  npcol = 2;
+  nprow = n;
+  npcol = d;
 
   Cblacs_pinfo( &iam, &nprocs ) ;
   Cblacs_get( -1, 0, &ictxt );
@@ -167,6 +167,9 @@ int main( int argc, char *argv[])
   descinit_(descA, &n, &d, &n, &d, &zero, &zero, &ictxt, &n, &info);
   descinit_(descB, &d, &n, &d, &n, &zero, &zero, &ictxt, &d, &info);
   descinit_(descC, &d, &d, &d, &d, &zero, &zero, &ictxt, &d, &info);
+
+  printf("DEBUGGING!\n");
+
 
   pdgemm_("N", "N", &d, &d, &n, &alpha, XT, &one, &one, descA, X, &one, &one, descB, &beta, Gamma, &one, &one, descC);
 
