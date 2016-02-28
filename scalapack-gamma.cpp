@@ -65,8 +65,8 @@ int main(int argc, char **argv)
     if(N<Nb || M<Mb){
       if (mpiroot){
 	cerr << "Not Allowed!"
-	     <<"Nb is greater than N or Mb is greater than M" 
-	     <<endl;
+	     << "Nb is greater than N or Mb is greater than M" 
+	     << endl;
       }
       MPI_Finalize();
       return 1;
