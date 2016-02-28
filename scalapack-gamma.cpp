@@ -349,7 +349,7 @@ int main(int argc, char **argv)
   }
 
 
-  /* Multiply matrices */
+  /* Initialize matrix descriptions and multiply matrices */
   int info;
   int iONE = 1;
   double alpha = 1.0; 
@@ -366,9 +366,6 @@ int main(int argc, char **argv)
   pdgemm_(n, n, &N, &N, &M, &alpha, X_local, &iONE, &iONE, descX,
 	  XT_local, &iONE, &iONE, descXT,
 	  &beta, Gamma_local, &iONE, &iONE, descGamma);
-
-
- 
 
 
   /* Gather matrix Gamma*/
