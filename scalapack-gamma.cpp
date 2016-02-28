@@ -220,12 +220,12 @@ int main(int argc, char **argv)
       recvr = (recvr+nr)%X_nrows;
   }
 
-  /* Print local matrices for X */
+  /* Print local matrices for X (top left corner [10x10])*/
   for (int id = 0; id < numproc; ++id) {
     if (id == myid) {
-      cout << "X_local on node " << myid << endl;
-      for (int r = 0; r < X_nrows; ++r) {
-	for (int c = 0; c < X_ncols; ++c)
+      cout << "X_local on node (top left corner [10x10])" << myid << endl;
+      for (int r = 0; r < min(X_nrows,10); ++r) {
+	for (int c = 0; c < min(X_ncols,10); ++c)
 	  cout << setw(10) << *(X_local+X_nrows*c+r) << " ";
 	cout << endl;
       }
@@ -288,11 +288,11 @@ int main(int argc, char **argv)
       recvr = (recvr+nr)%Gamma_nrows;
   }
  
-  /* Print gathered matrix Gamma*/
+  /* Print gathered matrix Gamma (top left corner [10x10])*/
   if (mpiroot) {
-    cout << "Matrix Gamma:\n";
-    for (int r = 0; r < N; ++r) {
-      for (int c = 0; c < N; ++c) {
+    cout << "Matrix Gamma (top left corner [10x10]):\n";
+    for (int r = 0; r < min(N,10); ++r) {
+      for (int c = 0; c < min(N,10); ++c) {
 	cout << setw(10) << *(Gamma_global+N*c+r) << " ";
       }
       cout << endl;
