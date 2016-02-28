@@ -49,7 +49,7 @@ int main(int argc, char **argv)
  
   int N, M, Nb, Mb;
   double *X_global = NULL, *X_local = NULL;
-  double *Gamma_global = NULL, *Gamma_global2 = NULL, *Gamma_local = NULL;
+  double *Gamma_global = NULL, *Gamma_local = NULL;
  
   /* Parse command line arguments */
   if (mpiroot) {
@@ -63,9 +63,7 @@ int main(int argc, char **argv)
 
     /* Reserve space and fill in matrix (with transposition!) */
     X_global  = new double[N*M];
-    
     Gamma_global = new double[N*N];
-    Gamma_global2 = new double[N*N];
 
     for (int r = 0; r < N; ++r) {
       for (int c = 0; c < M; ++c) {
@@ -306,7 +304,7 @@ int main(int argc, char **argv)
       if (mpiroot) {
 	// Receive the same data
 	// The leading dimension of the local matrix is Gamma_nrows!
-	Cdgerv2d(ctxt, nr, nc, Gamma_global2+N*c+r, N, sendr, sendc);
+	Cdgerv2d(ctxt, nr, nc, Gamma_global+N*c+r, N, sendr, sendc);
       }
  
     }
@@ -320,7 +318,7 @@ int main(int argc, char **argv)
     cout << "Matrix Gamma:\n";
     for (int r = 0; r < N; ++r) {
       for (int c = 0; c < N; ++c) {
-	cout << setw(10) << *(Gamma_global2+N*c+r) << " ";
+	cout << setw(10) << *(Gamma_global+N*c+r) << " ";
       }
       cout << endl;
     }
@@ -335,7 +333,6 @@ int main(int argc, char **argv)
   delete[] X_local;
 
   delete[] Gamma_global;
-  delete[] Gamma_global2;
   delete[] Gamma_local;
 
   Cblacs_gridexit(ctxt);
