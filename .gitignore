@@ -1,4 +1,5 @@
 sync_nodes.sh
 *~
 *#
-scalapack-gamma
+scalapack-gamma-c
+scalapack-gamma-cpp
