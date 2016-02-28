@@ -48,7 +48,7 @@ int main(int argc, char **argv)
   }
  
   int N, M, Nb, Mb;
-  double *X_global = NULL, *X_global2 = NULL, *X_local = NULL;
+  double *X_global = NULL, *X_local = NULL;
   double *Gamma_global = NULL, *Gamma_global2 = NULL, *Gamma_local = NULL;
  
   /* Parse command line arguments */
@@ -63,7 +63,6 @@ int main(int argc, char **argv)
 
     /* Reserve space and fill in matrix (with transposition!) */
     X_global  = new double[N*M];
-    X_global2 = new double[N*M];
     
     Gamma_global = new double[N*N];
     Gamma_global2 = new double[N*N];
@@ -183,8 +182,7 @@ int main(int argc, char **argv)
 	Cdgerv2d(ctxt, nr, nc, X_local+X_nrows*recvc+recvr, X_nrows, 0, 0);
 	recvc = (recvc+nc)%X_ncols;
       }
- 
-    }
+     }
  
     if (myrow == sendr)
       recvr = (recvr+nr)%X_nrows;
@@ -334,7 +332,6 @@ int main(int argc, char **argv)
  
   /* Release resources */
   delete[] X_global;
-  delete[] X_global2;
   delete[] X_local;
 
   delete[] Gamma_global;
