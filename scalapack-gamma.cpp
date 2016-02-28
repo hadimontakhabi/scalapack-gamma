@@ -87,16 +87,7 @@ int main(int argc, char **argv)
       cout << "\n";
     }
     cout << endl;
-    
-    /* Print matrix Gamma (all zeros at this point) */
-    cout << "Matrix Gamma:\n";
-    for (int r = 0; r < N; ++r) {
-      for (int c = 0; c < N; ++c) {
-	cout << setw(10) << Gamma_global [N*c + r] << " ";
-      }
-      cout << "\n";
-    }
-    cout << endl;
+
   }
  
   /* Begin Cblas context */
