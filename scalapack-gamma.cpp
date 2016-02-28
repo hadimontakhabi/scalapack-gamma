@@ -1,11 +1,10 @@
 #include <mpi.h>
  
 #include <iostream>
-#include <iomanip>
+#include <iomanip>   //setw
 #include <string>
-#include <fstream>
 #include <sstream>
-#include <cstdlib>  //rand
+#include <cstdlib>   //rand
  
 using namespace std;
  
@@ -19,7 +18,8 @@ extern "C" {
   void Cblacs_barrier(int, const char*);
   void Cdgerv2d(int, int, int, double*, int, int, int);
   void Cdgesd2d(int, int, int, double*, int, int, int);
- 
+
+  /* ScaLAPACK declarations */
   int  numroc_(int*, int*, int*, int*, int*);
   void descinit_( int *desc, int *m, int *n, int *mb, int *nb, int *irsrc, 
 		  int *icsrc, int *ictxt, int *lld, int *info);
