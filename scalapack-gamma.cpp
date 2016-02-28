@@ -42,21 +42,18 @@ int main(int argc, char **argv)
  
   if (argc < 5) {
     if (mpiroot)
-      cerr << "Usage: matrixTest N M Nb Mb" << endl;
+      cerr << "Usage: scalapack-gamma-cpp N M Nb Mb" << endl;
     MPI_Finalize();
     return 1;
   }
  
   int N, M, Nb, Mb;
   double *X_global = NULL, *X_global2 = NULL, *X_local = NULL;
-  double *XT_global = NULL, *XT_global2 = NULL, *XT_local = NULL;
   double *Gamma_global = NULL, *Gamma_global2 = NULL, *Gamma_local = NULL;
-
  
   /* Parse command line arguments */
   if (mpiroot) {
     /* Read command line arguments */
-    
     stringstream stream;
     stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
     stream >> N >> M >> Nb >> Mb;
@@ -64,12 +61,9 @@ int main(int argc, char **argv)
     cout << "N= " << N << ", M= " << M 
 	 << ", Nb= " << Nb << ", Mb= " << Mb << endl;
 
-     /* Reserve space and fill in matrix (with transposition!) */
+    /* Reserve space and fill in matrix (with transposition!) */
     X_global  = new double[N*M];
     X_global2 = new double[N*M];
-    
-    XT_global  = new double[M*N];
-    XT_global2 = new double[M*N];
     
     Gamma_global = new double[N*N];
     Gamma_global2 = new double[N*N];
@@ -80,13 +74,6 @@ int main(int argc, char **argv)
       }
     }
     
-    /* Transpose matrix X */
-    for (int i = 0; i<N; i++) {
-      for (int j = 0; j<M; j++) {
-	XT_global[j*N + i ] = X_global[i*M + j];
-      }
-    }
-
     /* Fill Gamma with zeros */
     for (int r = 0; r < N; ++r) {
       for (int c = 0; c < N; ++c) {
@@ -94,7 +81,6 @@ int main(int argc, char **argv)
       }
     }
 
- 
     /* Print matrix X */
     cout << "Matrix X:\n";
     for (int r = 0; r < N; ++r) {
@@ -104,17 +90,7 @@ int main(int argc, char **argv)
       cout << "\n";
     }
     cout << endl;
-
-    /* Print matrix XT */
-    cout << "Matrix XT:\n";
-    for (int r = 0; r < M; ++r) {
-      for (int c = 0; c < N; ++c) {
-	cout << setw(10) << XT_global [N*c + r] << " ";
-      }
-      cout << "\n";
-    }
-    cout << endl;
-
+    
     /* Print matrix Gamma (all zeros at this point) */
     cout << "Matrix Gamma:\n";
     for (int r = 0; r < N; ++r) {
@@ -149,6 +125,7 @@ int main(int argc, char **argv)
     if (myid == 0)
       cout << endl;
   }
+  
  
   /*****************************************
    * HERE BEGINS THE MOST INTERESTING PART *
@@ -213,52 +190,6 @@ int main(int argc, char **argv)
       recvr = (recvr+nr)%X_nrows;
   }
 
-
-  /* Reserve space for local matrices */
-  // Number of rows and cols owned by the current process
-  int XT_nrows = numroc_(&M, &Mb, &myrow, &iZERO, &procrows);
-  int XT_ncols = numroc_(&N, &Nb, &mycol, &iZERO, &proccols);
-  for (int id = 0; id < numproc; ++id) {
-    Cblacs_barrier(ctxt, "All");
-  }
-  XT_local = new double[XT_nrows*XT_ncols];
-  for (int i = 0; i < XT_nrows*XT_ncols; ++i) *(XT_local+i)=0.;
-
-  /* Scatter matrix */
-  for (int r = 0; r < M; r += Mb, sendr=(sendr+1)%procrows) {
-    sendc = 0;
-    // Number of rows to be sent
-    // Is this the last row block?
-    int nr = Mb;
-    if (M-r < Mb)
-      nr = M-r;
- 
-    for (int c = 0; c < N; c += Nb, sendc=(sendc+1)%proccols) {
-      // Number of cols to be sent
-      // Is this the last col block?
-      int nc = Nb;
-      if (N-c < Nb)
-	nc = N-c;
- 
-      if (mpiroot) {
-	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, XT_global+M*c+r, M, sendr, sendc);
-      }
- 
-      if (myrow == sendr && mycol == sendc) {
-	// Receive the same data
-	// The leading dimension of the local matrix is X_nrows!
-	Cdgerv2d(ctxt, nr, nc, XT_local+XT_nrows*recvc+recvr, XT_nrows, 0, 0);
-	recvc = (recvc+nc)%XT_ncols;
-      }
- 
-    }
- 
-    if (myrow == sendr)
-      recvr = (recvr+nr)%XT_nrows;
-  }
-
-
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
   int Gamma_nrows = numroc_(&N, &Nb, &myrow, &iZERO, &procrows);
@@ -304,8 +235,6 @@ int main(int argc, char **argv)
       recvr = (recvr+nr)%X_nrows;
   }
 
-
- 
   /* Print local matrices for X */
   for (int id = 0; id < numproc; ++id) {
     if (id == myid) {
@@ -320,20 +249,6 @@ int main(int argc, char **argv)
     Cblacs_barrier(ctxt, "All");
   }
 
-  /* Print local matrices for XT */
-  for (int id = 0; id < numproc; ++id) {
-    if (id == myid) {
-      cout << "XT_local on node " << myid << endl;
-      for (int r = 0; r < XT_nrows; ++r) {
-	for (int c = 0; c < XT_ncols; ++c)
-	  cout << setw(10) << *(XT_local+XT_nrows*c+r) << " ";
-	cout << endl;
-      }
-      cout << endl;
-    }
-    Cblacs_barrier(ctxt, "All");
-  }
- 
   /* Print local matrices for Gamma*/
   for (int id = 0; id < numproc; ++id) {
     if (id == myid) {
@@ -354,19 +269,17 @@ int main(int argc, char **argv)
   int iONE = 1;
   double alpha = 1.0; 
   double beta = 0.0;
-  int descX[9], descXT[9], descGamma[9];
+  int descX[9], descGamma[9];
   int lldX = (1 < X_nrows) ? X_nrows : 1;
-  int lldXT = (1 < XT_nrows) ? XT_nrows : 1;
   int lldGamma = (1 < Gamma_nrows) ? Gamma_nrows : 1;
   descinit_(descX, &N, &M, &Nb, &Mb, &iZERO, &iZERO, &ctxt, &lldX, &info);
-  descinit_(descXT, &M, &N, &Mb, &Nb, &iZERO, &iZERO, &ctxt, &lldXT, &info);
   descinit_(descGamma, &N, &N, &Nb, &Nb, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
 
   char n[1] = {'N'};
-  pdgemm_(n, n, &N, &N, &M, &alpha, X_local, &iONE, &iONE, descX,
-	  XT_local, &iONE, &iONE, descXT,
+  char t[1] = {'T'};
+  pdgemm_(n, t, &N, &N, &M, &alpha, X_local, &iONE, &iONE, descX,
+	  X_local, &iONE, &iONE, descX,
 	  &beta, Gamma_local, &iONE, &iONE, descGamma);
-
 
   /* Gather matrix Gamma*/
   sendr = 0;
@@ -423,10 +336,6 @@ int main(int argc, char **argv)
   delete[] X_global;
   delete[] X_global2;
   delete[] X_local;
-
-  delete[] XT_global;
-  delete[] XT_global2;
-  delete[] XT_local;
 
   delete[] Gamma_global;
   delete[] Gamma_global2;
