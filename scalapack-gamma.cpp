@@ -32,9 +32,11 @@ extern "C" {
  
 int main(int argc, char **argv)
 {
-  int mpirank;
+  double starttime, mytime, avgtime;
+  int mpirank, mpinprocs;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpinprocs);
   bool mpiroot = (mpirank == 0);
  
   /* Helping vars */
@@ -259,9 +261,16 @@ int main(int argc, char **argv)
 
   char n[1] = {'N'};
   char t[1] = {'T'};
+  
+  starttime = MPI_Wtime();
+  
   pdgemm_(n, t, &N, &N, &M, &alpha, X_local, &iONE, &iONE, descX,
 	  X_local, &iONE, &iONE, descX,
 	  &beta, Gamma_local, &iONE, &iONE, descGamma);
+  
+  mytime = MPI_Wtime() - starttime;
+  MPI_Reduce(&mytime, &avgtime, 1, MPI_DOUBLE, MPI_SUM, 0 ,MPI_COMM_WORLD);
+  avgtime /= mpinprocs;
 
   /* Gather matrix Gamma*/
   sendr = 0;
@@ -310,6 +319,10 @@ int main(int argc, char **argv)
     }
   }
  
+  if (mpiroot) {
+    cout << endl << "Average Time [seconds]: " << avgtime << endl;
+  }
+
   /************************************
    * END OF THE MOST INTERESTING PART *
    ************************************/
