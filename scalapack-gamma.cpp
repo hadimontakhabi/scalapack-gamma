@@ -426,6 +426,11 @@ int main(int argc, char **argv)
   delete[] X_global;
   delete[] X_global2;
   delete[] X_local;
+
+  delete[] XT_global;
+  delete[] XT_global2;
+  delete[] XT_local;
+
   delete[] Gamma_global;
   delete[] Gamma_global2;
   delete[] Gamma_local;
