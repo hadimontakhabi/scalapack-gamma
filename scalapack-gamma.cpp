@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	*(X_global+N*c + r) = (double) rand()/RAND_MAX;
       }
     }
-    
+    //
     /* Fill Gamma with zeros */
     for (int r = 0; r < N; ++r) {
       for (int c = 0; c < N; ++c) {
