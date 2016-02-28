@@ -41,8 +41,9 @@ int main(int argc, char **argv)
   int iZERO = 0;
  
   if (argc < 5) {
-    if (mpiroot)
+    if (mpiroot){
       cerr << "Usage: scalapack-gamma-cpp N M Nb Mb" << endl;
+    }
     MPI_Finalize();
     return 1;
   }
@@ -60,6 +61,16 @@ int main(int argc, char **argv)
 
     cout << "N= " << N << ", M= " << M 
 	 << ", Nb= " << Nb << ", Mb= " << Mb << endl;
+    
+    if(N<Nb || M<Mb){
+      if (mpiroot){
+	cerr << "Not Allowed!"
+	     <<"Nb is greater than N or Mb is greater than M" 
+	     <<endl;
+      }
+      MPI_Finalize();
+      return 1;
+    }
 
     /* Reserve space and fill in matrix (with transposition!) */
     X_global  = new double[N*M];
@@ -223,7 +234,7 @@ int main(int argc, char **argv)
   /* Print local matrices for X (top left corner [10x10])*/
   for (int id = 0; id < numproc; ++id) {
     if (id == myid) {
-      cout << "X_local on node (top left corner [10x10])" << myid << endl;
+      cout << "X_local (top left corner [10x10]) on node " << myid << endl;
       for (int r = 0; r < min(X_nrows,10); ++r) {
 	for (int c = 0; c < min(X_ncols,10); ++c)
 	  cout << setw(10) << *(X_local+X_nrows*c+r) << " ";
@@ -241,8 +252,8 @@ int main(int argc, char **argv)
   double alpha = 1.0; 
   double beta = 0.0;
   int descX[9], descGamma[9];
-  int lldX = (1 < X_nrows) ? X_nrows : 1;
-  int lldGamma = (1 < Gamma_nrows) ? Gamma_nrows : 1;
+  int lldX = max(1,X_nrows);
+  int lldGamma = max(1,Gamma_nrows);
   descinit_(descX, &N, &M, &Nb, &Mb, &iZERO, &iZERO, &ctxt, &lldX, &info);
   descinit_(descGamma, &N, &N, &Nb, &Nb, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
 
@@ -312,4 +323,5 @@ int main(int argc, char **argv)
 
   Cblacs_gridexit(ctxt);
   MPI_Finalize();
+  return 0;
 }
