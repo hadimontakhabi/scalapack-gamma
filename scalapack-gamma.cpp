@@ -224,8 +224,7 @@ int main(int argc, char **argv)
 		 Gamma_nrows, 0, 0);
 	recvc = (recvc+nc)%Gamma_ncols;
       }
- 
-    }
+     }
  
     if (myrow == sendr)
       recvr = (recvr+nr)%X_nrows;
@@ -238,20 +237,6 @@ int main(int argc, char **argv)
       for (int r = 0; r < X_nrows; ++r) {
 	for (int c = 0; c < X_ncols; ++c)
 	  cout << setw(10) << *(X_local+X_nrows*c+r) << " ";
-	cout << endl;
-      }
-      cout << endl;
-    }
-    Cblacs_barrier(ctxt, "All");
-  }
-
-  /* Print local matrices for Gamma*/
-  for (int id = 0; id < numproc; ++id) {
-    if (id == myid) {
-      cout << "Gamma_local on node " << myid << endl;
-      for (int r = 0; r < Gamma_nrows; ++r) {
-	for (int c = 0; c < Gamma_ncols; ++c)
-	  cout << setw(10) << *(Gamma_local+Gamma_nrows*c+r) << " ";
 	cout << endl;
       }
       cout << endl;
