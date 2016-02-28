@@ -1,10 +1,8 @@
-# scalapack-gamma
+# scalapack-gamma-cpp
 
 to compile:
 $ make
 
 to run:
-$ mpirun --hostfile ~/hadi/my_mpi_hostfile -np 2 ./scalapack-gamma 2 2
+$ mpirun --hostfile ~/hadi/my_mpi_hostfile -np NP ./scalapack-gamma-cpp N M Nb Mb
 
-Arguments:
-./scalapack-gamma n d
