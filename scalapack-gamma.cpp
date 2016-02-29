@@ -27,7 +27,6 @@ extern "C" {
 	       double *A, int *ia, int *ja, int *desca,
 	       double *B, int *ib, int *jb, int *descb, double *beta, 
 	       double *C, int *ic, int *jc, int *descc);
-  
 }
  
 int main(int argc, char **argv)
