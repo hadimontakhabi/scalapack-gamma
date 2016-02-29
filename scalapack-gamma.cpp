@@ -63,16 +63,7 @@ int main(int argc, char **argv)
     cout << "N= " << N << ", M= " << M 
 	 << ", Nb= " << Nb << ", Mb= " << Mb << endl;
     
-    if(N<Nb || M<Mb){
-      if (mpiroot){
-	cerr << "Not Allowed!"
-	     << "Nb is greater than N or Mb is greater than M" 
-	     << endl;
-      }
-      MPI_Finalize();
-      return 1;
-    }
-
+    
     /* Reserve space and fill in matrix (with transposition!) */
     X_global  = new double[N*M];
     Gamma_global = new double[N*N];
