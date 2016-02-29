@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 #include <cstdlib>   //rand
+
+#define DEBUG 0
  
 using namespace std;
  
@@ -224,6 +226,7 @@ int main(int argc, char **argv)
   }
 
   /* Print local matrices for X (top left corner [10x10])*/
+#if DEBUG
   for (int id = 0; id < numproc; ++id) {
     if (id == myid) {
       cout << "X_local (top left corner [10x10]) on node " << myid << endl;
@@ -236,7 +239,7 @@ int main(int argc, char **argv)
     }
     Cblacs_barrier(ctxt, "All");
   }
-
+#endif
 
   /* Initialize matrix descriptions and multiply matrices */
   int info;
