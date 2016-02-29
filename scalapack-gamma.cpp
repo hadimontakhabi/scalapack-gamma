@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
     for (int r = 0; r < N; ++r) {
       for (int c = 0; c < M; ++c) {
-	*(X_global+N*c + r) = 1.;//(double) rand()/RAND_MAX;
+	*(X_global+N*c + r) = (double) rand()/RAND_MAX;
       }
     }
 
