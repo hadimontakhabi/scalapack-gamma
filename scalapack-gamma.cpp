@@ -331,7 +331,7 @@ int main(int argc, char **argv)
   }
  
   if (mpiroot) {
-    cout << endl << "Average Time [seconds]: " << avgtime << endl;
+    cout << endl << "Average Time [seconds]: " << avgtime << endl << endl;
   }
 
   /************************************
