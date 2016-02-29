@@ -265,6 +265,24 @@ int main(int argc, char **argv)
   MPI_Reduce(&mytime, &avgtime, 1, MPI_DOUBLE, MPI_SUM, 0 ,MPI_COMM_WORLD);
   avgtime /= mpinprocs;
 
+
+  /* Print local matrices for Gamma (top left corner [10x10])*/
+#if DEBUG
+  for (int id = 0; id < numproc; ++id) {
+    if (id == myid) {
+      cout << "Gamma_local (top left corner [10x10]) on node " << myid << endl;
+      for (int r = 0; r < min(Gamma_nrows,10); ++r) {
+	for (int c = 0; c < min(Gamma_ncols,10); ++c)
+	  cout << setw(10) << *(Gamma_local+Gamma_nrows*c+r) << " ";
+	cout << endl;
+      }
+      cout << endl;
+    }
+    Cblacs_barrier(ctxt, "All");
+  }
+#endif
+
+
   /* Gather matrix Gamma*/
   sendr = 0;
   for (int r = 0; r < N; r += Nb, sendr=(sendr+1)%procrows) {
