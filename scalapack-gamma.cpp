@@ -67,9 +67,16 @@ int main(int argc, char **argv)
 	 << ", Nb= " << Nb << ", Mb= " << Mb << endl;
     
     
-    /* Reserve space and fill in matrix (with transposition!) */
-    X_global  = new double[N*M];
-    Gamma_global = new double[N*N];
+    /* Reserve space and fill in matrix X */
+    try{
+      X_global  = new double[N*M];
+      Gamma_global = new double[N*N];
+    } catch (std::bad_alloc& ba) {
+      std::cerr << "Failed to allocate memory." << endl 
+		<< "Exeprtion: " << ba.what() << endl;
+      return 1;
+    } 
+
 
     /* Read X from file */
     string fname(argv[5]);
