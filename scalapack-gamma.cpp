@@ -46,13 +46,13 @@ int main(int argc, char **argv)
  
   if (argc < 6) {
     if (mpiroot){
-      cerr << "Usage: scalapack-gamma-cpp N M Nb Mb filename" << endl;
+      cerr << "Usage: scalapack-gamma-cpp N D Nb Db filename" << endl;
     }
     MPI_Finalize();
     return 1;
   }
  
-  int N, M, Nb, Mb;
+  int N, D, Nb, Db;
   double *X_global = NULL, *X_local = NULL;
   double *Gamma_global = NULL, *Gamma_local = NULL;
  
@@ -61,15 +61,15 @@ int main(int argc, char **argv)
     /* Read command line arguments */
     stringstream stream;
     stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
-    stream >> N >> M >> Nb >> Mb;
+    stream >> N >> D >> Nb >> Db;
 
-    cout << "N= " << N << ", M= " << M 
-	 << ", Nb= " << Nb << ", Mb= " << Mb << endl;
+    cout << "N= " << N << ", D= " << D 
+	 << ", Nb= " << Nb << ", Db= " << Db << endl;
     
     
     /* Reserve space and fill in matrix X */
     try{
-      X_global  = new double[N*M];
+      X_global  = new double[N*D];
       Gamma_global = new double[N*N];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory." << endl 
@@ -86,9 +86,13 @@ int main(int argc, char **argv)
     for (int r = 0; r < N; ++r) {
       getline(file, line);
       istringstream ss(line);
-      for (int c = 0; c < M; ++c) {
+      for (int c = 0; c < D; ++c) {
 	getline(ss,element, ',');
+#if DEBUG
+	*(X_global + N*c + r) = 1;
+#else
 	istringstream(element) >> *(X_global + N*c + r);
+#endif
       }
     }
 
@@ -102,7 +106,7 @@ int main(int argc, char **argv)
     /* Print matrix X (top left corner [10x10]) */
     cout << "Matrix X (top left corner [10x10]):\n";
     for (int r = 0; r < min(N,10); ++r) {
-      for (int c = 0; c < min(M,10); ++c) {
+      for (int c = 0; c < min(D,10); ++c) {
 	cout << setw(10) << X_global [N*c + r] << " ";
       }
       cout << "\n";
@@ -143,20 +147,20 @@ int main(int argc, char **argv)
   int dimensions[4];
   if (mpiroot) {
     dimensions[0] = N;
-    dimensions[1] = M;
+    dimensions[1] = D;
     dimensions[2] = Nb;
-    dimensions[3] = Mb;
+    dimensions[3] = Db;
   }
   MPI_Bcast(dimensions, 4, MPI_INT, 0, MPI_COMM_WORLD);
   N = dimensions[0];
-  M = dimensions[1];
+  D = dimensions[1];
   Nb = dimensions[2];
-  Mb = dimensions[3];
+  Db = dimensions[3];
  
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
   int X_nrows = numroc_(&N, &Nb, &myrow, &iZERO, &procrows);
-  int X_ncols = numroc_(&M, &Mb, &mycol, &iZERO, &proccols);
+  int X_ncols = numroc_(&D, &Db, &mycol, &iZERO, &proccols);
   for (int id = 0; id < numproc; ++id) {
     Cblacs_barrier(ctxt, "All");
   }
@@ -173,12 +177,12 @@ int main(int argc, char **argv)
     if (N-r < Nb)
       nr = N-r;
  
-    for (int c = 0; c < M; c += Mb, sendc=(sendc+1)%proccols) {
+    for (int c = 0; c < D; c += Db, sendc=(sendc+1)%proccols) {
       // Number of cols to be sent
       // Is this the last col block?
-      int nc = Mb;
-      if (M-c < Mb)
-	nc = M-c;
+      int nc = Db;
+      if (D-c < Db)
+	nc = D-c;
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
@@ -265,7 +269,7 @@ int main(int argc, char **argv)
   int descX[9], descGamma[9];
   int lldX = max(1,X_nrows);
   int lldGamma = max(1,Gamma_nrows);
-  descinit_(descX, &N, &M, &Nb, &Mb, &iZERO, &iZERO, &ctxt, &lldX, &info);
+  descinit_(descX, &N, &D, &Nb, &Db, &iZERO, &iZERO, &ctxt, &lldX, &info);
   descinit_(descGamma, &N, &N, &Nb, &Nb, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
 
   char n[1] = {'N'};
@@ -273,10 +277,11 @@ int main(int argc, char **argv)
   
   starttime = MPI_Wtime();
   
-  pdgemm_(n, t, &N, &N, &M, &alpha, X_local, &iONE, &iONE, descX,
+  /* Gamma = X*XT */ 
+  pdgemm_(n, t, &N, &N, &D, &alpha, X_local, &iONE, &iONE, descX,
 	  X_local, &iONE, &iONE, descX,
 	  &beta, Gamma_local, &iONE, &iONE, descGamma);
-  
+
   mytime = MPI_Wtime() - starttime;
   MPI_Reduce(&mytime, &avgtime, 1, MPI_DOUBLE, MPI_SUM, 0 ,MPI_COMM_WORLD);
   avgtime /= mpinprocs;
