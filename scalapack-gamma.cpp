@@ -7,7 +7,7 @@
 #include <cstdlib>   //rand
 #include <fstream>
 
-#define DEBUG 1
+#define DEBUG 0
  
 using namespace std;
  
@@ -70,13 +70,19 @@ int main(int argc, char **argv)
     /* Reserve space and fill in matrix X */
     try{
       X_global  = new double[N*D];
-      Gamma_global = new double[D*D];
     } catch (std::bad_alloc& ba) {
-      std::cerr << "Failed to allocate memory." << endl 
+      std::cerr << "Failed to allocate memory for X_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
       return 1;
     } 
 
+    try{
+      Gamma_global = new double[D*D];
+    } catch (std::bad_alloc& ba) {
+      std::cerr << "Failed to allocate memory for Gamma_global." << endl 
+		<< "Exeprtion: " << ba.what() << endl;
+      return 1;
+    } 
 
     /* Read X from file */
     string fname(argv[5]);
@@ -342,7 +348,7 @@ int main(int argc, char **argv)
  
   /* Print gathered matrix Gamma (top left corner [10x10])*/
   if (mpiroot) {
-    cout << "Matrix Gamma (top left corner [10x10]):\n";
+    cout << "Matrix Gamma = XT*X (top left corner [10x10]):\n";
     for (int r = 0; r < min(D,10); ++r) {
       for (int c = 0; c < min(D,10); ++c) {
 	cout << setw(10) << *(Gamma_global+D*c+r) << " ";
