@@ -7,7 +7,7 @@
 #include <cstdlib>   //rand
 #include <fstream>
 
-#define DEBUG 0
+#define DEBUG 1
  
 using namespace std;
  
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     /* Reserve space and fill in matrix X */
     try{
       X_global  = new double[N*D];
-      Gamma_global = new double[N*N];
+      Gamma_global = new double[D*D];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
@@ -97,9 +97,9 @@ int main(int argc, char **argv)
     }
 
     /* Fill Gamma with zeros */
-    for (int r = 0; r < N; ++r) {
-      for (int c = 0; c < N; ++c) {
-	*(Gamma_global+N*c + r) = (double) 0;
+    for (int r = 0; r < D; ++r) {
+      for (int c = 0; c < D; ++c) {
+	*(Gamma_global+D*c + r) = (double) 0;
       }
     }
 
@@ -203,8 +203,8 @@ int main(int argc, char **argv)
 
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
-  int Gamma_nrows = numroc_(&N, &Nb, &myrow, &iZERO, &procrows);
-  int Gamma_ncols = numroc_(&N, &Nb, &mycol, &iZERO, &proccols);
+  int Gamma_nrows = numroc_(&D, &Db, &myrow, &iZERO, &procrows);
+  int Gamma_ncols = numroc_(&D, &Db, &mycol, &iZERO, &proccols);
   for (int id = 0; id < numproc; ++id) {
     Cblacs_barrier(ctxt, "All");
   }
@@ -212,24 +212,24 @@ int main(int argc, char **argv)
   for (int i = 0; i < Gamma_nrows*Gamma_ncols; ++i) *(Gamma_local+i)=0.;
 
   /* Scatter matrix */
-  for (int r = 0; r < N; r += Nb, sendr=(sendr+1)%procrows) {
+  for (int r = 0; r < D; r += Db, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
     // Is this the last row block?
-    int nr = Nb;
-    if (N-r < Nb)
-      nr = N-r;
+    int nr = Db;
+    if (D-r < Db)
+      nr = D-r;
  
-    for (int c = 0; c < N; c += Nb, sendc=(sendc+1)%proccols) {
+    for (int c = 0; c < D; c += Db, sendc=(sendc+1)%proccols) {
       // Number of cols to be sent
       // Is this the last col block?
-      int nc = Nb;
-      if (N-c < Nb)
-	nc = N-c;
+      int nc = Db;
+      if (D-c < Db)
+	nc = D-c;
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, Gamma_global+N*c+r, N, sendr, sendc);
+	Cdgesd2d(ctxt, nr, nc, Gamma_global+D*c+r, D, sendr, sendc);
       }
  
       if (myrow == sendr && mycol == sendc) {
@@ -270,15 +270,15 @@ int main(int argc, char **argv)
   int lldX = max(1,X_nrows);
   int lldGamma = max(1,Gamma_nrows);
   descinit_(descX, &N, &D, &Nb, &Db, &iZERO, &iZERO, &ctxt, &lldX, &info);
-  descinit_(descGamma, &N, &N, &Nb, &Nb, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
+  descinit_(descGamma, &D, &D, &Db, &Db, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
 
   char n[1] = {'N'};
   char t[1] = {'T'};
   
   starttime = MPI_Wtime();
   
-  /* Gamma = X*XT */ 
-  pdgemm_(n, t, &N, &N, &D, &alpha, X_local, &iONE, &iONE, descX,
+  /* Gamma = XT*X */ 
+  pdgemm_(t, n, &D, &D, &N, &alpha, X_local, &iONE, &iONE, descX,
 	  X_local, &iONE, &iONE, descX,
 	  &beta, Gamma_local, &iONE, &iONE, descGamma);
 
@@ -306,20 +306,20 @@ int main(int argc, char **argv)
 
   /* Gather matrix Gamma*/
   sendr = 0;
-  for (int r = 0; r < N; r += Nb, sendr=(sendr+1)%procrows) {
+  for (int r = 0; r < D; r += Db, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
     // Is this the last row block?
-    int nr = Nb;
-    if (N-r < Nb)
-      nr = N-r;
+    int nr = Db;
+    if (D-r < Db)
+      nr = D-r;
  
-    for (int c = 0; c < N; c += Nb, sendc=(sendc+1)%proccols) {
+    for (int c = 0; c < D; c += Db, sendc=(sendc+1)%proccols) {
       // Number of cols to be sent
       // Is this the last col block?
-      int nc = Nb;
-      if (N-c < Nb)
-	nc = N-c;
+      int nc = Db;
+      if (D-c < Db)
+	nc = D-c;
  
       if (myrow == sendr && mycol == sendc) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
       if (mpiroot) {
 	// Receive the same data
 	// The leading dimension of the local matrix is Gamma_nrows!
-	Cdgerv2d(ctxt, nr, nc, Gamma_global+N*c+r, N, sendr, sendc);
+	Cdgerv2d(ctxt, nr, nc, Gamma_global+D*c+r, D, sendr, sendc);
       }
  
     }
@@ -343,9 +343,9 @@ int main(int argc, char **argv)
   /* Print gathered matrix Gamma (top left corner [10x10])*/
   if (mpiroot) {
     cout << "Matrix Gamma (top left corner [10x10]):\n";
-    for (int r = 0; r < min(N,10); ++r) {
-      for (int c = 0; c < min(N,10); ++c) {
-	cout << setw(10) << *(Gamma_global+N*c+r) << " ";
+    for (int r = 0; r < min(D,10); ++r) {
+      for (int c = 0; c < min(D,10); ++c) {
+	cout << setw(10) << *(Gamma_global+D*c+r) << " ";
       }
       cout << endl;
     }
