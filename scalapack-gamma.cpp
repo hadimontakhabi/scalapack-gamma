@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <cstdlib>   //rand
+#include <fstream>
 
 #define DEBUG 0
  
@@ -43,9 +44,9 @@ int main(int argc, char **argv)
   /* Helping vars */
   int iZERO = 0;
  
-  if (argc < 5) {
+  if (argc < 6) {
     if (mpiroot){
-      cerr << "Usage: scalapack-gamma-cpp N M Nb Mb" << endl;
+      cerr << "Usage: scalapack-gamma-cpp N M Nb Mb filename" << endl;
     }
     MPI_Finalize();
     return 1;
@@ -70,9 +71,17 @@ int main(int argc, char **argv)
     X_global  = new double[N*M];
     Gamma_global = new double[N*N];
 
+    /* Read X from file */
+    string fname(argv[5]);
+    ifstream file(fname.c_str());
+    string line, element;
+    
     for (int r = 0; r < N; ++r) {
+      getline(file, line);
+      istringstream ss(line);
       for (int c = 0; c < M; ++c) {
-	*(X_global+N*c + r) = (double) rand()/RAND_MAX;
+	getline(ss,element, ',');
+	istringstream(element) >> *(X_global + N*c + r);
       }
     }
 
