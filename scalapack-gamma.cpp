@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     cout << "Matrix X (top left corner [10x10]):\n";
     for (int r = 0; r < min(N,10); ++r) {
       for (int c = 0; c < min(D,10); ++c) {
-	cout << setw(10) << X_global [N*c + r] << " ";
+	cout << setw(15) << X_global [N*c + r] << " ";
       }
       cout << "\n";
     }
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
       cout << "X_local (top left corner [10x10]) on node " << myid << endl;
       for (int r = 0; r < min(X_nrows,10); ++r) {
 	for (int c = 0; c < min(X_ncols,10); ++c)
-	  cout << setw(10) << *(X_local+X_nrows*c+r) << " ";
+	  cout << setw(15) << *(X_local+X_nrows*c+r) << " ";
 	cout << endl;
       }
       cout << endl;
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
       cout << "Gamma_local (top left corner [10x10]) on node " << myid << endl;
       for (int r = 0; r < min(Gamma_nrows,10); ++r) {
 	for (int c = 0; c < min(Gamma_ncols,10); ++c)
-	  cout << setw(10) << *(Gamma_local+Gamma_nrows*c+r) << " ";
+	  cout << setw(15) << *(Gamma_local+Gamma_nrows*c+r) << " ";
 	cout << endl;
       }
       cout << endl;
@@ -351,7 +351,7 @@ int main(int argc, char **argv)
     cout << "Matrix Gamma = XT*X (top left corner [10x10]):\n";
     for (int r = 0; r < min(D,10); ++r) {
       for (int c = 0; c < min(D,10); ++c) {
-	cout << setw(10) << *(Gamma_global+D*c+r) << " ";
+	cout << setw(15) << *(Gamma_global+D*c+r) << " ";
       }
       cout << endl;
     }
