@@ -4,5 +4,6 @@ to compile:
 $ make
 
 to run:
-$ mpirun --hostfile ~/hadi/my_mpi_hostfile -np NP ./scalapack-gamma-cpp N M Nb Mb
+$ mpirun --hostfile ~/hadi/my_mpi_hostfile -np NP ./scalapack-gamma-cpp N D Nb Db filename
+
 
