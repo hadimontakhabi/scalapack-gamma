@@ -36,11 +36,16 @@ int main(int argc, char **argv)
 {
   double starttime, mytime, avgtime;
   int mpirank, mpinprocs;
+
+  double *buf;
+  MPI_File fh;
+  MPI_Status status;
+
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpinprocs);
   bool mpiroot = (mpirank == 0);
- 
+
   /* Helping vars */
   int iZERO = 0;
  
@@ -51,22 +56,36 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return 1;
   }
- 
+
   int N, D, Nb, Db;
   double *X_global = NULL, *X_local = NULL;
   double *Gamma_global = NULL, *Gamma_local = NULL;
- 
-  /* Parse command line arguments */
-  if (mpiroot) {
-    /* Read command line arguments */
-    stringstream stream;
-    stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
-    stream >> N >> D >> Nb >> Db;
 
+  /* Read command line arguments */
+  stringstream stream;
+  stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
+  stream >> N >> D >> Nb >> Db;
+  
+  if (mpiroot) {
     cout << "N= " << N << ", D= " << D 
-	 << ", Nb= " << Nb << ", Db= " << Db << endl;
-    
-    
+       << ", Nb= " << Nb << ", Db= " << Db << endl;
+  }
+
+  MPI_File_open( MPI_COMM_WORLD, "datafile.b", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
+  buf = (double *)malloc( D * sizeof(double) );
+  MPI_File_seek( fh, 39*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
+  MPI_File_read_all( fh, buf, 39, MPI_DOUBLE, &status );
+  
+  for (int i=0; i<39; i++) {
+    fprintf( stdout, "%d: buf[%d] = %f\n", mpirank, i, buf[i] );
+    fflush(stdout);
+  }
+  
+  free( buf );
+  MPI_File_close( &fh );
+ 
+ 
+  if (mpiroot) {
     /* Reserve space and fill in matrix X */
     try{
       X_global  = new double[N*D];
