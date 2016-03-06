@@ -7,7 +7,7 @@
 #include <cstdlib>   //rand
 #include <fstream>
 
-#define DEBUG 0
+#define DEBUG 1
  
 using namespace std;
  
@@ -357,6 +357,8 @@ int main(int argc, char **argv)
 
   /* Gather matrix Gamma*/
   sendr = 0;
+  recvc = 0;
+  recvr = 0;
   for (int r = 0; r < D; r += Db, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
