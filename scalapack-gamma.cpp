@@ -38,6 +38,7 @@ int main(int argc, char **argv)
   int mpirank, mpinprocs;
 
   double *buf;
+
   MPI_File fh;
   MPI_Status status;
 
@@ -71,30 +72,52 @@ int main(int argc, char **argv)
        << ", Nb= " << Nb << ", Db= " << Db << endl;
   }
 
-  MPI_File_open( MPI_COMM_WORLD, "datafile.b", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
-  buf = (double *)malloc( D * sizeof(double) );
-  MPI_File_seek( fh, 39*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
-  MPI_File_read_all( fh, buf, 39, MPI_DOUBLE, &status );
-  
-  for (int i=0; i<39; i++) {
-    fprintf( stdout, "%d: buf[%d] = %f\n", mpirank, i, buf[i] );
-    fflush(stdout);
-  }
-  
-  free( buf );
-  MPI_File_close( &fh );
- 
- 
+  /* read the input file's rank's chunk in each process) */
+/*
+  MPI_File_open( MPI_COMM_WORLD, "datafile10x10.b", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
+  int chunk = (N*D)/mpinprocs;
+  buf = (double *)malloc( chunk * sizeof(double) );
+
+  MPI_File_seek( fh, chunk*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
+  MPI_File_read_all( fh, buf, chunk, MPI_DOUBLE, &status );
+*/
+  /* Reserve space for matrix X_global */
   if (mpiroot) {
-    /* Reserve space and fill in matrix X */
-    try{
+    try {
       X_global  = new double[N*D];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory for X_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
       return 1;
     } 
+  }
 
+  /* Gather all the chunks in root */
+/*
+  MPI_Gather( buf, chunk, MPI_DOUBLE, X_global, chunk, MPI_DOUBLE,
+	      0, MPI_COMM_WORLD);
+*/
+#if DEBUG
+  if (mpiroot){
+    /* Print matrix X (top left corner [10x10]) */
+    cout << "Matrix X (top left corner [10x10]):\n";
+    for (int r = 0; r < min(N,10); r++) {
+      for (int c = 0; c < min(D,10); c++) {
+	cout << setw(15) << X_global [D*r + c] << " ";
+      }
+      cout << "\n";
+    }
+    cout << endl;
+  }
+#endif
+
+/*
+  free( buf );
+  MPI_File_close( &fh );
+*/
+
+  if (mpiroot) {
+  /* Reserve space and fill in matrix Gamma */
     try{
       Gamma_global = new double[D*D];
     } catch (std::bad_alloc& ba) {
@@ -113,7 +136,7 @@ int main(int argc, char **argv)
       istringstream ss(line);
       for (int c = 0; c < D; ++c) {
 	getline(ss,element, ',');
-#if DEBUG
+#if 1
 	*(X_global + N*c + r) = 1;
 #else
 	istringstream(element) >> *(X_global + N*c + r);
@@ -128,6 +151,7 @@ int main(int argc, char **argv)
       }
     }
 
+#if 1
     /* Print matrix X (top left corner [10x10]) */
     cout << "Matrix X (top left corner [10x10]):\n";
     for (int r = 0; r < min(N,10); ++r) {
@@ -137,6 +161,7 @@ int main(int argc, char **argv)
       cout << "\n";
     }
     cout << endl;
+#endif
   }
  
   /* Begin Cblas context */
@@ -169,6 +194,7 @@ int main(int argc, char **argv)
    *****************************************/
  
   /* Broadcast of the matrix dimensions */
+/*
   int dimensions[4];
   if (mpiroot) {
     dimensions[0] = N;
@@ -181,7 +207,7 @@ int main(int argc, char **argv)
   D = dimensions[1];
   Nb = dimensions[2];
   Db = dimensions[3];
- 
+*/ 
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
   int X_nrows = numroc_(&N, &Nb, &myrow, &iZERO, &procrows);
@@ -368,9 +394,9 @@ int main(int argc, char **argv)
   /* Print gathered matrix Gamma (top left corner [10x10])*/
   if (mpiroot) {
     cout << "Matrix Gamma = XT*X (top left corner [10x10]):\n";
-    for (int r = 0; r < min(D,10); ++r) {
-      for (int c = 0; c < min(D,10); ++c) {
-	cout << setw(15) << *(Gamma_global+D*c+r) << " ";
+    for (int r = 0; r < min(D,10); r++) {
+      for (int c = 0; c < min(D,10); c++) {
+	cout << setw(15) << Gamma_global [D*r+c] << " ";
       }
       cout << endl;
     }
