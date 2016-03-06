@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     } 
 
     /* Read X from file */
-/*
+
     string fname(argv[5]);
     ifstream file(fname.c_str());
     string line, element;
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 #endif
       }
     }
-*/
+
     /* Fill Gamma with zeros */
     for (int r = 0; r < D; ++r) {
       for (int c = 0; c < D; ++c) {
@@ -234,7 +234,7 @@ int main(int argc, char **argv)
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, X_global+N*c+r, N, sendr, sendc);
+	Cdgesd2d(ctxt, nr, nc, X_global+D*r+c, N, sendr, sendc);
       }
  
       if (myrow == sendr && mycol == sendc) {
@@ -277,7 +277,7 @@ int main(int argc, char **argv)
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, Gamma_global+D*c+r, D, sendr, sendc);
+	Cdgesd2d(ctxt, nr, nc, Gamma_global+D*r+c, D, sendr, sendc);
       }
  
       if (myrow == sendr && mycol == sendc) {
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
       cout << "X_local (top left corner [10x10]) on node " << myid << endl;
       for (int r = 0; r < min(X_nrows,10); ++r) {
 	for (int c = 0; c < min(X_ncols,10); ++c)
-	  cout << setw(15) << *(X_local+X_nrows*c+r) << " ";
+	  cout << setw(15) << *(X_local+X_ncols*r+c) << " ";
 	cout << endl;
       }
       cout << endl;
@@ -341,8 +341,9 @@ int main(int argc, char **argv)
     if (id == myid) {
       cout << "Gamma_local (top left corner [10x10]) on node " << myid << endl;
       for (int r = 0; r < min(Gamma_nrows,10); ++r) {
-	for (int c = 0; c < min(Gamma_ncols,10); ++c)
-	  cout << setw(15) << *(Gamma_local+Gamma_nrows*c+r) << " ";
+	for (int c = 0; c < min(Gamma_ncols,10); ++c) {
+	  cout << setw(15) << *(Gamma_local+Gamma_nrows*r+c) << " ";
+	}
 	cout << endl;
       }
       cout << endl;
@@ -390,7 +391,7 @@ int main(int argc, char **argv)
       recvr = (recvr+nr)%Gamma_nrows;
   }
  
-  /* Print gathered matrix Gamma (top left corner [10x10])*/
+  /* Print gathered matrix Gamma (top left corner [10x10]) */
   if (mpiroot) {
     cout << "Matrix Gamma = XT*X (top left corner [10x10]):\n";
     for (int r = 0; r < min(D,10); r++) {
