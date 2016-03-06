@@ -73,14 +73,13 @@ int main(int argc, char **argv)
   }
 
   /* read the input file's rank's chunk in each process) */
-/*
   MPI_File_open( MPI_COMM_WORLD, "datafile10x10.b", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
   int chunk = (N*D)/mpinprocs;
   buf = (double *)malloc( chunk * sizeof(double) );
 
   MPI_File_seek( fh, chunk*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
   MPI_File_read_all( fh, buf, chunk, MPI_DOUBLE, &status );
-*/
+
   /* Reserve space for matrix X_global */
   if (mpiroot) {
     try {
@@ -93,10 +92,9 @@ int main(int argc, char **argv)
   }
 
   /* Gather all the chunks in root */
-/*
   MPI_Gather( buf, chunk, MPI_DOUBLE, X_global, chunk, MPI_DOUBLE,
 	      0, MPI_COMM_WORLD);
-*/
+
 #if DEBUG
   if (mpiroot){
     /* Print matrix X (top left corner [10x10]) */
@@ -111,10 +109,8 @@ int main(int argc, char **argv)
   }
 #endif
 
-/*
   free( buf );
   MPI_File_close( &fh );
-*/
 
   if (mpiroot) {
   /* Reserve space and fill in matrix Gamma */
@@ -127,6 +123,7 @@ int main(int argc, char **argv)
     } 
 
     /* Read X from file */
+/*
     string fname(argv[5]);
     ifstream file(fname.c_str());
     string line, element;
@@ -143,7 +140,7 @@ int main(int argc, char **argv)
 #endif
       }
     }
-
+*/
     /* Fill Gamma with zeros */
     for (int r = 0; r < D; ++r) {
       for (int c = 0; c < D; ++c) {
@@ -151,12 +148,12 @@ int main(int argc, char **argv)
       }
     }
 
-#if 1
+#if DEBUG
     /* Print matrix X (top left corner [10x10]) */
     cout << "Matrix X (top left corner [10x10]):\n";
     for (int r = 0; r < min(N,10); ++r) {
       for (int c = 0; c < min(D,10); ++c) {
-	cout << setw(15) << X_global [N*c + r] << " ";
+	cout << setw(15) << X_global [D*r + c] << " ";
       }
       cout << "\n";
     }
