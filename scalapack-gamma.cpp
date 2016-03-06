@@ -311,7 +311,9 @@ int main(int argc, char **argv)
 
 
   /* Gather matrix Gamma*/
-  sendr = 0;
+  sendr = 0;   
+  recvr = 0;
+  recvc = 0;
   for (int r = 0; r < D; r += Db, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
