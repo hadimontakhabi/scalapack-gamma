@@ -72,7 +72,7 @@ int main(int argc, char **argv)
   }
   
   /* read the input file's rank's chunk in each process) */
-  MPI_File_open( MPI_COMM_WORLD, "datafile10x10.b", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
+  MPI_File_open( MPI_COMM_WORLD, "datafile8x10.b", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
   int chunk = (N*D)/mpinprocs;
   buf = (double *)malloc( chunk * sizeof(double) );
 
