@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   }
  
   int N, D, Nb, Db;
-  double *X_global = NULL, *X_local = NULL;
+  double *X_global = NULL, *X_read = NULL, *X_local = NULL;
   double *Gamma_global = NULL, *Gamma_local = NULL;
  
   /* Read command line arguments */
@@ -83,6 +83,7 @@ int main(int argc, char **argv)
   if (mpiroot) {
     try {
       X_global  = new double[N*D];
+      X_read  = new double[N*D];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory for X_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
   }
 
   /* Gather all the chunks in root */
-  MPI_Gather( buf, chunk, MPI_DOUBLE, X_global, chunk, MPI_DOUBLE,
+  MPI_Gather( buf, chunk, MPI_DOUBLE, X_read, chunk, MPI_DOUBLE,
 	      0, MPI_COMM_WORLD);
 
   free( buf );
@@ -113,7 +114,7 @@ int main(int argc, char **argv)
     ifstream file(fname.c_str());
     string line, element;
     
-
+    /*
     for (int r = 0; r < N; ++r) {
       getline(file, line);
       istringstream ss(line);
@@ -126,6 +127,19 @@ int main(int argc, char **argv)
 #endif
       }
     }
+    */
+
+    int index = 0;
+    for (int r = 0; r < N; ++r) {
+      for (int c = 0; c < D; ++c) {
+#if 0
+	*(X_global + N*c + r) = 1;
+#else
+	*(X_global + N*c + r) = X_read[index++];
+#endif
+      }
+    }
+
 
 
     /* Fill Gamma with zeros */
