@@ -94,21 +94,6 @@ int main(int argc, char **argv)
   MPI_Gather( buf, chunk, MPI_DOUBLE, X_global, chunk, MPI_DOUBLE,
 	      0, MPI_COMM_WORLD);
 
-  
-#if DEBUG
-  if (mpiroot){
-    /* Print matrix X (top left corner [10x10]) */
-    cout << "Matrix X (top left corner [10x10]):\n";
-    for (int r = 0; r < min(N,10); ++r) {
-      for (int c = 0; c < min(D,10); ++c) {
-	cout << setw(15) << X_global [N*c + r] << " ";
-      }
-      cout << "\n";
-    }
-    cout << endl;
-  }
-#endif
-
   free( buf );
   MPI_File_close( &fh );
 
@@ -128,6 +113,7 @@ int main(int argc, char **argv)
     ifstream file(fname.c_str());
     string line, element;
     
+
     for (int r = 0; r < N; ++r) {
       getline(file, line);
       istringstream ss(line);
@@ -140,6 +126,7 @@ int main(int argc, char **argv)
 #endif
       }
     }
+
 
     /* Fill Gamma with zeros */
     for (int r = 0; r < D; ++r) {
