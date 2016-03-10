@@ -36,6 +36,11 @@ int main(int argc, char **argv)
 {
   double starttime, mytime, avgtime;
   int mpirank, mpinprocs;
+  double *buf;
+
+  MPI_File fh;
+  MPI_Status status;
+
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpinprocs);
@@ -53,29 +58,49 @@ int main(int argc, char **argv)
   }
  
   int N, D, Nb, Db;
-  double *X_global = NULL, *X_local = NULL;
+  double *X_global = NULL, *X_read = NULL, *X_local = NULL;
   double *Gamma_global = NULL, *Gamma_local = NULL;
  
-  /* Parse command line arguments */
-  if (mpiroot) {
-    /* Read command line arguments */
-    stringstream stream;
-    stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
-    stream >> N >> D >> Nb >> Db;
-
+  /* Read command line arguments */
+  stringstream stream;
+  stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
+  stream >> N >> D >> Nb >> Db;
+  
+  if (mpiroot){
     cout << "N= " << N << ", D= " << D 
 	 << ", Nb= " << Nb << ", Db= " << Db << endl;
-    
-    
-    /* Reserve space and fill in matrix X */
-    try{
+  }
+  
+  /* read the input file's rank's chunk in each process) */
+  MPI_File_open( MPI_COMM_WORLD, "datafile8x10.b", MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
+  int chunk = (N*D)/mpinprocs;
+  buf = (double *)malloc( chunk * sizeof(double) );
+
+  MPI_File_seek( fh, chunk*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
+  MPI_File_read_all( fh, buf, chunk, MPI_DOUBLE, &status );
+
+  /* Reserve space for matrix X_global */
+  if (mpiroot) {
+    try {
       X_global  = new double[N*D];
+      X_read  = new double[N*D];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory for X_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
       return 1;
     } 
+  }
 
+  /* Gather all the chunks in root */
+  MPI_Gather( buf, chunk, MPI_DOUBLE, X_read, chunk, MPI_DOUBLE,
+	      0, MPI_COMM_WORLD);
+
+  free( buf );
+  MPI_File_close( &fh );
+
+
+  if (mpiroot) {
+    /* Reserve space and fill in matrix Gamma */
     try{
       Gamma_global = new double[D*D];
     } catch (std::bad_alloc& ba) {
@@ -84,20 +109,14 @@ int main(int argc, char **argv)
       return 1;
     } 
 
-    /* Read X from file */
-    string fname(argv[5]);
-    ifstream file(fname.c_str());
-    string line, element;
-    
+    /* Store X_global in column major order */
+    int index = 0;
     for (int r = 0; r < N; ++r) {
-      getline(file, line);
-      istringstream ss(line);
       for (int c = 0; c < D; ++c) {
-	getline(ss,element, ',');
-#if DEBUG
+#if 0
 	*(X_global + N*c + r) = 1;
 #else
-	istringstream(element) >> *(X_global + N*c + r);
+	*(X_global + N*c + r) = X_read[index++];
 #endif
       }
     }
