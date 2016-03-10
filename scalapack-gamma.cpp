@@ -109,26 +109,7 @@ int main(int argc, char **argv)
       return 1;
     } 
 
-    /* Read X from file */
-    string fname(argv[5]);
-    ifstream file(fname.c_str());
-    string line, element;
-    
-    /*
-    for (int r = 0; r < N; ++r) {
-      getline(file, line);
-      istringstream ss(line);
-      for (int c = 0; c < D; ++c) {
-	getline(ss,element, ',');
-#if DEBUG
-	*(X_global + N*c + r) = 1;
-#else
-	istringstream(element) >> *(X_global + N*c + r);
-#endif
-      }
-    }
-    */
-
+    /* Store X_global in column major order */
     int index = 0;
     for (int r = 0; r < N; ++r) {
       for (int c = 0; c < D; ++c) {
@@ -139,8 +120,6 @@ int main(int argc, char **argv)
 #endif
       }
     }
-
-
 
     /* Fill Gamma with zeros */
     for (int r = 0; r < D; ++r) {
