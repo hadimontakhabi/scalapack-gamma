@@ -1,5 +1,7 @@
 sync_nodes.sh
 *~
 *#
+*.b
+*.txt
 scalapack-gamma-c
 scalapack-gamma-cpp
