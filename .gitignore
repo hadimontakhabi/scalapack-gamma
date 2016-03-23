@@ -3,5 +3,6 @@ sync_nodes.sh
 *#
 *.b
 *.txt
+*.sh
 scalapack-gamma-c
 scalapack-gamma-cpp
