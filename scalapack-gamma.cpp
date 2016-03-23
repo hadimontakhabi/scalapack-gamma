@@ -57,23 +57,23 @@ int main(int argc, char **argv)
     return 1;
   }
  
-  int n, d, nb, db;
+  int nn, dd, nnb, ddb;
   double *X_global = NULL, *X_read = NULL, *X_local = NULL;
   double *Gamma_global = NULL, *Gamma_local = NULL;
  
   /* Read command line arguments */
   stringstream stream;
   stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
-  stream >> n >> d >> nb >> db;
+  stream >> nn >> dd >> nnb >> ddb;
   
   if (mpiroot){
-    cout << "n= " << n << ", d= " << d 
-	 << ", nb= " << nb << ", db= " << db << endl;
+    cout << "n= " << nn << ", d= " << dd 
+	 << ", nb= " << nnb << ", db= " << ddb << endl;
   }
   
   /* read the input file's rank's chunk in each process) */
   MPI_File_open( MPI_COMM_WORLD, argv[5], MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
-  int chunk = (n*d)/mpinprocs;
+  int chunk = (nn*dd)/mpinprocs;
   buf = (double *)malloc( chunk * sizeof(double) );
 
   MPI_File_seek( fh, chunk*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
@@ -82,8 +82,8 @@ int main(int argc, char **argv)
   /* Reserve space for matrix X_global */
   if (mpiroot) {
     try {
-      X_global  = new double[n*d];
-      X_read  = new double[n*d];
+      X_global  = new double[nn*dd];
+      X_read  = new double[nn*dd];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory for X_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   if (mpiroot) {
     /* Reserve space and fill in matrix Gamma */
     try{
-      Gamma_global = new double[d*d];
+      Gamma_global = new double[dd*dd];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory for Gamma_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
@@ -111,28 +111,28 @@ int main(int argc, char **argv)
 
     /* Store X_global in column major order */
     int index = 0;
-    for (int r = 0; r < n; ++r) {
-      for (int c = 0; c < d; ++c) {
+    for (int r = 0; r < nn; ++r) {
+      for (int c = 0; c < dd; ++c) {
 #if 0
-	*(X_global + n*c + r) = 1;
+	*(X_global + nn*c + r) = 1;
 #else
-	*(X_global + n*c + r) = X_read[index++];
+	*(X_global + nn*c + r) = X_read[index++];
 #endif
       }
     }
 
     /* Fill Gamma with zeros */
-    for (int r = 0; r < d; ++r) {
-      for (int c = 0; c < d; ++c) {
-	*(Gamma_global+d*c + r) = (double) 0;
+    for (int r = 0; r < dd; ++r) {
+      for (int c = 0; c < dd; ++c) {
+	*(Gamma_global+dd*c + r) = (double) 0;
       }
     }
 
     /* Print matrix X (top left corner [10x10]) */
     cout << "Matrix X (top left corner [10x10]):\n";
-    for (int r = 0; r < min(n,10); ++r) {
-      for (int c = 0; c < min(d,10); ++c) {
-	cout << setw(15) << X_global [n*c + r] << " ";
+    for (int r = 0; r < min(nn,10); ++r) {
+      for (int c = 0; c < min(dd,10); ++c) {
+	cout << setw(15) << X_global [nn*c + r] << " ";
       }
       cout << "\n";
     }
@@ -170,8 +170,8 @@ int main(int argc, char **argv)
  
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
-  int X_nrows = numroc_(&n, &nb, &myrow, &iZERO, &procrows);
-  int X_ncols = numroc_(&d, &db, &mycol, &iZERO, &proccols);
+  int X_nrows = numroc_(&nn, &nnb, &myrow, &iZERO, &procrows);
+  int X_ncols = numroc_(&dd, &ddb, &mycol, &iZERO, &proccols);
   for (int id = 0; id < numproc; ++id) {
     Cblacs_barrier(ctxt, "All");
   }
@@ -180,24 +180,24 @@ int main(int argc, char **argv)
 
   /* Scatter matrix */
   int sendr = 0, sendc = 0, recvr = 0, recvc = 0;
-  for (int r = 0; r < n; r += nb, sendr=(sendr+1)%procrows) {
+  for (int r = 0; r < nn; r += nnb, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
     // Is this the last row block?
-    int nr = nb;
-    if (n-r < nb)
-      nr = n-r;
+    int nr = nnb;
+    if (nn-r < nnb)
+      nr = nn-r;
  
-    for (int c = 0; c < d; c += db, sendc=(sendc+1)%proccols) {
+    for (int c = 0; c < dd; c += ddb, sendc=(sendc+1)%proccols) {
       // Number of cols to be sent
       // Is this the last col block?
-      int nc = db;
-      if (d-c < db)
-	nc = d-c;
+      int nc = ddb;
+      if (dd-c < ddb)
+	nc = dd-c;
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, X_global+n*c+r, n, sendr, sendc);
+	Cdgesd2d(ctxt, nr, nc, X_global+nn*c+r, nn, sendr, sendc);
       }
  
       if (myrow == sendr && mycol == sendc) {
@@ -214,8 +214,8 @@ int main(int argc, char **argv)
 
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
-  int Gamma_nrows = numroc_(&d, &db, &myrow, &iZERO, &procrows);
-  int Gamma_ncols = numroc_(&d, &db, &mycol, &iZERO, &proccols);
+  int Gamma_nrows = numroc_(&dd, &ddb, &myrow, &iZERO, &procrows);
+  int Gamma_ncols = numroc_(&dd, &ddb, &mycol, &iZERO, &proccols);
   for (int id = 0; id < numproc; ++id) {
     Cblacs_barrier(ctxt, "All");
   }
@@ -223,24 +223,24 @@ int main(int argc, char **argv)
   for (int i = 0; i < Gamma_nrows*Gamma_ncols; ++i) *(Gamma_local+i)=0.;
 
   /* Scatter matrix */
-  for (int r = 0; r < d; r += db, sendr=(sendr+1)%procrows) {
+  for (int r = 0; r < dd; r += ddb, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
     // Is this the last row block?
-    int nr = db;
-    if (d-r < db)
-      nr = d-r;
+    int nr = ddb;
+    if (dd-r < ddb)
+      nr = dd-r;
  
-    for (int c = 0; c < d; c += db, sendc=(sendc+1)%proccols) {
+    for (int c = 0; c < dd; c += ddb, sendc=(sendc+1)%proccols) {
       // Number of cols to be sent
       // Is this the last col block?
-      int nc = db;
-      if (d-c < db)
-	nc = d-c;
+      int nc = ddb;
+      if (dd-c < ddb)
+	nc = dd-c;
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, Gamma_global+d*c+r, d, sendr, sendc);
+	Cdgesd2d(ctxt, nr, nc, Gamma_global+dd*c+r, dd, sendr, sendc);
       }
  
       if (myrow == sendr && mycol == sendc) {
@@ -280,8 +280,8 @@ int main(int argc, char **argv)
   int descX[9], descGamma[9];
   int lldX = max(1,X_nrows);
   int lldGamma = max(1,Gamma_nrows);
-  descinit_(descX, &n, &d, &nb, &db, &iZERO, &iZERO, &ctxt, &lldX, &info);
-  descinit_(descGamma, &d, &d, &db, &db, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
+  descinit_(descX, &nn, &dd, &nnb, &ddb, &iZERO, &iZERO, &ctxt, &lldX, &info);
+  descinit_(descGamma, &dd, &dd, &ddb, &ddb, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
 
   char N[1] = {'N'};
   char T[1] = {'T'};
@@ -289,7 +289,7 @@ int main(int argc, char **argv)
   starttime = MPI_Wtime();
   
   /* Gamma = XT*X */ 
-  pdgemm_(T, N, &d, &d, &n, &alpha, X_local, &iONE, &iONE, descX,
+  pdgemm_(T, N, &dd, &dd, &nn, &alpha, X_local, &iONE, &iONE, descX,
 	  X_local, &iONE, &iONE, descX,
 	  &beta, Gamma_local, &iONE, &iONE, descGamma);
 
@@ -319,20 +319,20 @@ int main(int argc, char **argv)
   sendr = 0;   
   recvr = 0;
   recvc = 0;
-  for (int r = 0; r < d; r += db, sendr=(sendr+1)%procrows) {
+  for (int r = 0; r < dd; r += ddb, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
     // Is this the last row block?
-    int nr = db;
-    if (d-r < db)
-      nr = d-r;
+    int nr = ddb;
+    if (dd-r < ddb)
+      nr = dd-r;
  
-    for (int c = 0; c < d; c += db, sendc=(sendc+1)%proccols) {
+    for (int c = 0; c < dd; c += ddb, sendc=(sendc+1)%proccols) {
       // Number of cols to be sent
       // Is this the last col block?
-      int nc = db;
-      if (d-c < db)
-	nc = d-c;
+      int nc = ddb;
+      if (dd-c < ddb)
+	nc = dd-c;
  
       if (myrow == sendr && mycol == sendc) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
       if (mpiroot) {
 	// Receive the same data
 	// The leading dimension of the local matrix is Gamma_nrows!
-	Cdgerv2d(ctxt, nr, nc, Gamma_global+d*c+r, d, sendr, sendc);
+	Cdgerv2d(ctxt, nr, nc, Gamma_global+dd*c+r, dd, sendr, sendc);
       }
  
     }
@@ -356,9 +356,9 @@ int main(int argc, char **argv)
   /* Print gathered matrix Gamma (top left corner [10x10])*/
   if (mpiroot) {
     cout << "Matrix Gamma = XT*X (top left corner [10x10]):\n";
-    for (int r = 0; r < min(d,10); ++r) {
-      for (int c = 0; c < min(d,10); ++c) {
-	cout << setw(15) << *(Gamma_global+d*c+r) << " ";
+    for (int r = 0; r < min(dd,10); ++r) {
+      for (int c = 0; c < min(dd,10); ++c) {
+	cout << setw(15) << *(Gamma_global+dd*c+r) << " ";
       }
       cout << endl;
     }
