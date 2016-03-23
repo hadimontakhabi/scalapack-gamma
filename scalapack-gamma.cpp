@@ -167,21 +167,7 @@ int main(int argc, char **argv)
   /*****************************************
    * HERE BEGINS THE MOST INTERESTING PART *
    *****************************************/
- 
-  /* Broadcast of the matrix dimensions */
-  int dimensions[4];
-  if (mpiroot) {
-    dimensions[0] = n;
-    dimensions[1] = d;
-    dimensions[2] = nb;
-    dimensions[3] = db;
-  }
-  MPI_Bcast(dimensions, 4, MPI_INT, 0, MPI_COMM_WORLD);
-  n = dimensions[0];
-  d = dimensions[1];
-  nb = dimensions[2];
-  db = dimensions[3];
- 
+
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
   int X_nrows = numroc_(&n, &nb, &myrow, &iZERO, &procrows);
