@@ -7,7 +7,7 @@
 #include <cstdlib>   //rand
 #include <fstream>
 
-#define DEBUG 0
+#define DEBUG 1
  
 using namespace std;
  
@@ -66,11 +66,13 @@ int main(int argc, char **argv)
   stream << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4];
   stream >> nn >> dd >> nnb >> ddb;
   
+#if DEBUG 
   if (mpiroot){
     cout << "n= " << nn << ", d= " << dd 
 	 << ", nb= " << nnb << ", db= " << ddb << endl;
   }
-  
+#endif
+
   int rows = dd, columns = nn, row_blocks = ddb, column_blocks = nnb;
 
   /* read the input file's rank's chunk in each process) */
@@ -118,6 +120,7 @@ int main(int argc, char **argv)
     }
 
     /* Print matrix XT (top left corner [10x10]) */
+#if DEBUG
     cout << "Matrix XT (top left corner [10x10]):\n";
     for (int r = 0; r < min(rows,10); ++r) {
       for (int c = 0; c < min(columns,10); ++c) {
@@ -126,6 +129,7 @@ int main(int argc, char **argv)
       cout << "\n";
     }
     cout << endl;
+#endif
   }
  
   /* Begin Cblas context */
@@ -137,6 +141,7 @@ int main(int argc, char **argv)
   Cblacs_gridinit(&ctxt, "Row-major", procrows, proccols);
   Cblacs_pcoord(ctxt, myid, &myrow, &mycol);
  
+#if DEBUG
   /* Print grid pattern */
   if (myid == 0)
     cout << "Processes grid pattern:" << endl;
@@ -151,7 +156,7 @@ int main(int argc, char **argv)
     if (myid == 0)
       cout << endl;
   }
-  
+#endif
  
   /*****************************************
    * HERE BEGINS THE MOST INTERESTING PART *
@@ -340,6 +345,7 @@ int main(int argc, char **argv)
       recvr = (recvr+nr)%Gamma_nrows;
   }
  
+#if DEBUG
   /* Print gathered matrix Gamma (top left corner [10x10])*/
   if (mpiroot) {
     cout << "Matrix Gamma = XT*X (top left corner [10x10]):\n";
@@ -350,7 +356,8 @@ int main(int argc, char **argv)
       cout << endl;
     }
   }
- 
+#endif
+
   if (mpiroot) {
     cout << endl << "Average Time [seconds]: " << avgtime << endl << endl;
   }
