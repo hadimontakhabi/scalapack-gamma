@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   }
  
   int nn, dd, nnb, ddb;
-  double *XT_global = NULL, *X_read = NULL, *XT_local = NULL;
+  double *XT_global = NULL, *XT_local = NULL;
   double *Gamma_global = NULL, *Gamma_local = NULL;
  
   /* Read command line arguments */
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
   /* read the input file's rank's chunk in each process) */
   MPI_File_open( MPI_COMM_WORLD, argv[5], MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
-  int chunk = (nn*dd)/mpinprocs;
+  int chunk = (rows*columns)/mpinprocs;
   buf = (double *)malloc( chunk * sizeof(double) );
 
   MPI_File_seek( fh, chunk*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
@@ -84,8 +84,7 @@ int main(int argc, char **argv)
   /* Reserve space for matrix XT_global */
   if (mpiroot) {
     try {
-      XT_global  = new double[nn*dd];
-      X_read  = new double[nn*dd];
+      XT_global  = new double[rows*columns];
     } catch (std::bad_alloc& ba) {
       std::cerr << "Failed to allocate memory for XT_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
