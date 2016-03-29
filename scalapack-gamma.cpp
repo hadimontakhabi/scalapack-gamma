@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   }
  
   int nn, dd, nnb, ddb;
-  double *X_global = NULL, *X_read = NULL, *X_local = NULL;
+  double *XT_global = NULL, *X_read = NULL, *XT_local = NULL;
   double *Gamma_global = NULL, *Gamma_local = NULL;
  
   /* Read command line arguments */
@@ -71,6 +71,8 @@ int main(int argc, char **argv)
 	 << ", nb= " << nnb << ", db= " << ddb << endl;
   }
   
+  int rows = dd, columns = nn, row_blocks = ddb, column_blocks = nnb;
+
   /* read the input file's rank's chunk in each process) */
   MPI_File_open( MPI_COMM_WORLD, argv[5], MPI_MODE_RDONLY, MPI_INFO_NULL, &fh );
   int chunk = (nn*dd)/mpinprocs;
@@ -79,20 +81,20 @@ int main(int argc, char **argv)
   MPI_File_seek( fh, chunk*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
   MPI_File_read_all( fh, buf, chunk, MPI_DOUBLE, &status );
 
-  /* Reserve space for matrix X_global */
+  /* Reserve space for matrix XT_global */
   if (mpiroot) {
     try {
-      X_global  = new double[nn*dd];
+      XT_global  = new double[nn*dd];
       X_read  = new double[nn*dd];
     } catch (std::bad_alloc& ba) {
-      std::cerr << "Failed to allocate memory for X_global." << endl 
+      std::cerr << "Failed to allocate memory for XT_global." << endl 
 		<< "Exeprtion: " << ba.what() << endl;
       return 1;
     } 
   }
 
   /* Gather all the chunks in root */
-  MPI_Gather( buf, chunk, MPI_DOUBLE, X_read, chunk, MPI_DOUBLE,
+  MPI_Gather( buf, chunk, MPI_DOUBLE, XT_global, chunk, MPI_DOUBLE,
 	      0, MPI_COMM_WORLD);
 
   free( buf );
@@ -109,18 +111,6 @@ int main(int argc, char **argv)
       return 1;
     } 
 
-    /* Store X_global in column major order */
-    int index = 0;
-    for (int r = 0; r < nn; ++r) {
-      for (int c = 0; c < dd; ++c) {
-#if 0
-	*(X_global + nn*c + r) = 1;
-#else
-	*(X_global + nn*c + r) = X_read[index++];
-#endif
-      }
-    }
-
     /* Fill Gamma with zeros */
     for (int r = 0; r < dd; ++r) {
       for (int c = 0; c < dd; ++c) {
@@ -128,11 +118,11 @@ int main(int argc, char **argv)
       }
     }
 
-    /* Print matrix X (top left corner [10x10]) */
-    cout << "Matrix X (top left corner [10x10]):\n";
-    for (int r = 0; r < min(nn,10); ++r) {
-      for (int c = 0; c < min(dd,10); ++c) {
-	cout << setw(15) << X_global [nn*c + r] << " ";
+    /* Print matrix XT (top left corner [10x10]) */
+    cout << "Matrix XT (top left corner [10x10]):\n";
+    for (int r = 0; r < min(rows,10); ++r) {
+      for (int c = 0; c < min(columns,10); ++c) {
+	cout << setw(15) << XT_global [rows*c + r] << " ";
       }
       cout << "\n";
     }
@@ -170,17 +160,16 @@ int main(int argc, char **argv)
  
   /* Reserve space for local matrices */
   // Number of rows and cols owned by the current process
-  int X_nrows = numroc_(&nn, &nnb, &myrow, &iZERO, &procrows);
-  int X_ncols = numroc_(&dd, &ddb, &mycol, &iZERO, &proccols);
+  int XT_nrows = numroc_(&rows, &row_blocks, &myrow, &iZERO, &procrows);
+  int XT_ncols = numroc_(&columns, &column_blocks, &mycol, &iZERO, &proccols);
   for (int id = 0; id < numproc; ++id) {
     Cblacs_barrier(ctxt, "All");
   }
-  X_local = new double[X_nrows*X_ncols];
-  for (int i = 0; i < X_nrows*X_ncols; ++i) *(X_local+i)=0.;
+  XT_local = new double[XT_nrows*XT_ncols];
+  for (int i = 0; i < XT_nrows*XT_ncols; ++i) *(XT_local+i)=0.;
 
   /* Scatter matrix */
   int sendr = 0, sendc = 0, recvr = 0, recvc = 0;
-  int rows = nn, columns = dd, row_blocks = nnb, column_blocks = ddb;
   for (int r = 0; r < rows; r += row_blocks, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
@@ -198,19 +187,19 @@ int main(int argc, char **argv)
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, X_global+rows*c+r, rows, sendr, sendc);
+	Cdgesd2d(ctxt, nr, nc, XT_global+rows*c+r, rows, sendr, sendc);
       }
  
       if (myrow == sendr && mycol == sendc) {
 	// Receive the same data
-	// The leading dimension of the local matrix is X_nrows!
-	Cdgerv2d(ctxt, nr, nc, X_local+X_nrows*recvc+recvr, X_nrows, 0, 0);
-	recvc = (recvc+nc)%X_ncols;
+	// The leading dimension of the local matrix is XT_nrows!
+	Cdgerv2d(ctxt, nr, nc, XT_local+XT_nrows*recvc+recvr, XT_nrows, 0, 0);
+	recvc = (recvc+nc)%XT_ncols;
       }
      }
  
     if (myrow == sendr)
-      recvr = (recvr+nr)%X_nrows;
+      recvr = (recvr+nr)%XT_nrows;
   }
 
   /* Reserve space for local matrices */
@@ -224,6 +213,7 @@ int main(int argc, char **argv)
   for (int i = 0; i < Gamma_nrows*Gamma_ncols; ++i) *(Gamma_local+i)=0.;
 
   /* Scatter matrix */
+  sendr = 0; sendc = 0; recvr = 0; recvc = 0;
   for (int r = 0; r < dd; r += ddb, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
@@ -254,17 +244,17 @@ int main(int argc, char **argv)
      }
  
     if (myrow == sendr)
-      recvr = (recvr+nr)%X_nrows;
+      recvr = (recvr+nr)%XT_nrows;
   }
 
   /* Print local matrices for X (top left corner [10x10])*/
 #if DEBUG
   for (int id = 0; id < numproc; ++id) {
     if (id == myid) {
-      cout << "X_local (top left corner [10x10]) on node " << myid << endl;
-      for (int r = 0; r < min(X_nrows,10); ++r) {
-	for (int c = 0; c < min(X_ncols,10); ++c)
-	  cout << setw(15) << *(X_local+X_nrows*c+r) << " ";
+      cout << "XT_local (top left corner [10x10]) on node " << myid << endl;
+      for (int r = 0; r < min(XT_nrows,10); ++r) {
+	for (int c = 0; c < min(XT_ncols,10); ++c)
+	  cout << setw(15) << *(XT_local+XT_nrows*c+r) << " ";
 	cout << endl;
       }
       cout << endl;
@@ -279,9 +269,9 @@ int main(int argc, char **argv)
   double alpha = 1.0; 
   double beta = 0.0;
   int descX[9], descGamma[9];
-  int lldX = max(1,X_nrows);
+  int lldX = max(1,XT_nrows);
   int lldGamma = max(1,Gamma_nrows);
-  descinit_(descX, &nn, &dd, &nnb, &ddb, &iZERO, &iZERO, &ctxt, &lldX, &info);
+  descinit_(descX, &rows, &columns, &row_blocks, &column_blocks, &iZERO, &iZERO, &ctxt, &lldX, &info);
   descinit_(descGamma, &dd, &dd, &ddb, &ddb, &iZERO, &iZERO, &ctxt, &lldGamma, &info);
 
   char N[1] = {'N'};
@@ -290,14 +280,13 @@ int main(int argc, char **argv)
   starttime = MPI_Wtime();
   
   /* Gamma = XT*X */ 
-  pdgemm_(T, N, &dd, &dd, &nn, &alpha, X_local, &iONE, &iONE, descX,
-	  X_local, &iONE, &iONE, descX,
+  pdgemm_(N, T, &dd, &dd, &nn, &alpha, XT_local, &iONE, &iONE, descX,
+	  XT_local, &iONE, &iONE, descX,
 	  &beta, Gamma_local, &iONE, &iONE, descGamma);
 
   mytime = MPI_Wtime() - starttime;
   MPI_Reduce(&mytime, &avgtime, 1, MPI_DOUBLE, MPI_SUM, 0 ,MPI_COMM_WORLD);
   avgtime /= mpinprocs;
-
 
   /* Print local matrices for Gamma (top left corner [10x10])*/
 #if DEBUG
@@ -317,9 +306,7 @@ int main(int argc, char **argv)
 
 
   /* Gather matrix Gamma*/
-  sendr = 0;   
-  recvr = 0;
-  recvc = 0;
+  sendr = 0; recvr = 0; recvc = 0;
   for (int r = 0; r < dd; r += ddb, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
@@ -374,8 +361,8 @@ int main(int argc, char **argv)
    ************************************/
  
   /* Release resources */
-  delete[] X_global;
-  delete[] X_local;
+  delete[] XT_global;
+  delete[] XT_local;
 
   delete[] Gamma_global;
   delete[] Gamma_local;
