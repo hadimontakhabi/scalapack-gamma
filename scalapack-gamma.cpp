@@ -180,24 +180,25 @@ int main(int argc, char **argv)
 
   /* Scatter matrix */
   int sendr = 0, sendc = 0, recvr = 0, recvc = 0;
-  for (int r = 0; r < nn; r += nnb, sendr=(sendr+1)%procrows) {
+  int rows = nn, columns = dd, row_blocks = nnb, column_blocks = ddb;
+  for (int r = 0; r < rows; r += row_blocks, sendr=(sendr+1)%procrows) {
     sendc = 0;
     // Number of rows to be sent
     // Is this the last row block?
-    int nr = nnb;
-    if (nn-r < nnb)
-      nr = nn-r;
+    int nr = row_blocks;
+    if (rows-r < row_blocks)
+      nr = rows-r;
  
-    for (int c = 0; c < dd; c += ddb, sendc=(sendc+1)%proccols) {
+    for (int c = 0; c < columns; c += column_blocks, sendc=(sendc+1)%proccols) {
       // Number of cols to be sent
       // Is this the last col block?
-      int nc = ddb;
-      if (dd-c < ddb)
-	nc = dd-c;
+      int nc = column_blocks;
+      if (columns-c < column_blocks)
+	nc = columns-c;
  
       if (mpiroot) {
 	// Send a nr-by-nc submatrix to process (sendr, sendc)
-	Cdgesd2d(ctxt, nr, nc, X_global+nn*c+r, nn, sendr, sendc);
+	Cdgesd2d(ctxt, nr, nc, X_global+rows*c+r, rows, sendr, sendc);
       }
  
       if (myrow == sendr && mycol == sendc) {
