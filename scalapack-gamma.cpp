@@ -81,7 +81,18 @@ int main(int argc, char **argv)
   buf = (double *)malloc( chunk * sizeof(double) );
 
   MPI_File_seek( fh, chunk*mpirank*sizeof(MPI_DOUBLE), MPI_SEEK_SET ); 
+
+  starttime = MPI_Wtime();
   MPI_File_read_all( fh, buf, chunk, MPI_DOUBLE, &status );
+  mytime = MPI_Wtime() - starttime;
+
+  MPI_Reduce(&mytime, &avgtime, 1, MPI_DOUBLE, MPI_SUM, 0 ,MPI_COMM_WORLD);
+
+  avgtime /= mpinprocs;
+  if (mpiroot) {
+    cout << endl << "Average IO (read) Time [seconds]: " << avgtime << endl << endl;
+  }
+
 
   /* Reserve space for matrix XT_global */
   if (mpiroot) {
